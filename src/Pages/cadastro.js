@@ -1,12 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useRef, createContext, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, ImageBackground } from "react-native";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from "@react-navigation/native";
-import { auth } from "../Firebase/FirebaseConnection";
+import * as Animatable from 'react-native-animatable';
+import { auth, db } from "../Firebase/FirebaseConnection";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import { addDoc, collection } from "firebase/firestore";
 
 export default function Cadastro(){
     const navigation = useNavigation();
+
+    const BotaoRef = useRef(null)
 
     const [PrimeiroNome, setPrimeiroNome] = useState('')
     const [UltimoNome, setUltimoNome] = useState('')
@@ -25,23 +29,32 @@ export default function Cadastro(){
                 setMostrarMensagemErro('')
             }, 5000)
          } else if(ValorSenha.length < 6){
-             setMostrarMensagemErro("Senha fraca, (minímo 6 caracteres)")
+             setMostrarMensagemErro("Senha fraca (minímo 6 caracteres)")
              setInterval(() => {
                  setMostrarMensagemErro('')
              }, 5000)
              return
         } else{
             createUserWithEmailAndPassword(auth, ValorEmail, ValorSenha)
-            .then(() => {
-                setMostrarMensagemConfirmacao("Conta criada")
-                setTimeout(() => {
-                    setMostrarMensagemConfirmacao('')
-                }, 5000)
-                setPrimeiroNome('')
-                setUltimoNome('')
-                setValorEmail('')
-                setValorSenha('')
-            })
+            .then(async (userCredential) =>{
+                    await addDoc(collection(db, "Usuarios"), {
+                        PrimeiroNome: PrimeiroNome,
+                        UltimoNome: UltimoNome,
+                        Email: ValorEmail,
+                        Senha: ValorSenha
+                    })
+                    
+                    setPrimeiroNome('')
+                    setUltimoNome('')
+                    setValorEmail('')
+                    setValorSenha('')
+
+                    setMostrarMensagemConfirmacao("Conta criada")
+                    setTimeout(() => {
+                        setMostrarMensagemConfirmacao('')
+                    }, 5000)
+                })
+                
             .catch(erro => {
                 switch(erro.code){
                     case "auth/email-already-in-use":
@@ -114,19 +127,33 @@ export default function Cadastro(){
                 </View>
 
                 {MostrarMensagemConfirmacao ? (
-                    <View style={estilo.MensagemConfirmacao}>
+                    <Animatable.View 
+                        style={estilo.MensagemConfirmacao}
+                        ref={BotaoRef}
+                        animation='fadeIn'
+                        duration={800}
+                        delay={200}
+                        easing='ease-out'
+                    >
                         <Text style={{fontSize: 16, color: "#008000", fontWeight: '600'}}>
                             {MostrarMensagemConfirmacao}
                         </Text>
-                    </View>
+                    </Animatable.View>
                 ): null}
 
                 {MostrarMensagemErro ? (
-                    <View style={estilo.MensagemErro}>
+                    <Animatable.View 
+                        style={estilo.MensagemErro}
+                        ref={BotaoRef}
+                        animation='fadeIn'
+                        duration={1000}
+                        delay={300}
+                        easing='ease-out'
+                    >
                         <Text style={{fontSize: 16, color: "#8B0000", fontWeight: '600'}}>
                             {MostrarMensagemErro}
                         </Text>
-                    </View>
+                    </Animatable.View>
                 ): null}
 
                 <View style={estilo.AreaIrParaCadastro}>
@@ -157,7 +184,7 @@ const estilo = StyleSheet.create({
     },
     Input:{
         height: 60,
-        width: 200,
+        width: 300,
         fontSize:20,
         marginBottom: 15,
         borderBottomColor: '#CCC',
@@ -189,15 +216,15 @@ const estilo = StyleSheet.create({
         fontWeight: 'bold'
     },
     MensagemConfirmacao:{
-        height: 60, width: 350, backgroundColor: "#90EE90", 
+        height: 60, maxWidth: "90%", minWidth: 200, backgroundColor: "#90EE90", 
         borderWidth: 2, borderColor: "#008000", borderBottomRightRadius: 10,
         borderBottomLeftRadius: 10, borderTopLeftRadius: 10, justifyContent: 'center',
-        alignItems: 'center', marginTop: -60
+        alignItems: 'center', marginTop: -60,
     },
     MensagemErro:{
-        height: 60, width: 350, backgroundColor: "#FF6666", 
+        height: 60, backgroundColor: "#FF6666", 
         borderWidth: 2, borderColor: "#8B0000", borderBottomRightRadius: 10,
         borderBottomLeftRadius: 10, borderTopLeftRadius: 10, justifyContent: 'center',
-        alignItems: 'center', marginTop: -60,
+        alignItems: 'center', marginTop: -60, maxWidth: "90%", minWidth: 200, padding: 15
     }
 })
