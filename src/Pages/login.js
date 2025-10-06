@@ -1,5 +1,9 @@
 import React, { useState, useRef } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, ImageBackground } from "react-native";
+import {
+    View, Text, StyleSheet, TouchableOpacity, 
+    Image, TextInput, ImageBackground, ActivityIndicator,
+    Modal
+ } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { auth } from "../Firebase/FirebaseConnection";
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -9,12 +13,12 @@ export default function Login(){
     const navigation = useNavigation();
 
     const BotaoRef = useRef(null)
-
     const [ValorEmail, setValorEmail] = useState('')
     const [ValorSenha, setValorSenha] = useState('')
-
     const [MensagemErro, setMensagemErro] = useState('')
     const [MensagemConfirmacao, setMensagemConfirmacao] = useState('')
+    const [MostrarSenha, setMostrarSenha] = useState(false)
+    const [Carregar, setCarregar] = useState(false)
 
     function FazerLogin(){
         if(ValorEmail === '' || ValorSenha === ''){
@@ -30,12 +34,14 @@ export default function Login(){
 
         signInWithEmailAndPassword(auth, ValorEmail, ValorSenha)
         .then(() => {
-            setMensagemConfirmacao('Redirecionando...')
-            setTimeout(() => {
-                navigation.navigate('Home')
-            }, 2000)
+            setCarregar(true) // Loading só aparece quando login deu certo
             setValorEmail('')
             setValorSenha('')
+            
+             setTimeout(() => {
+                setCarregar(false) // Remove o loading
+                navigation.navigate('Home')
+             }, 3000)
         })
         .catch(erro => {
             switch(erro.code){
@@ -50,7 +56,6 @@ export default function Login(){
                     setTimeout(() => {
                         setMensagemErro('')
                     }, 5000)
-                    handleError('Usuário não encontrado');
                     break;
                 case "auth/wrong-password":
                     setMensagemErro('Senha incorreta')
@@ -64,6 +69,15 @@ export default function Login(){
 
     return(
         <View style={{flex: 1}}>
+            {/* Modal de Loading */}
+            <Modal 
+                visible={Carregar}
+                animationType="fade"
+            >
+                    <View style={estilo.ModalContainer}>
+                        <ActivityIndicator color={'#121212'} size={60}/>
+                    </View>
+            </Modal>
             
                  <ImageBackground
                     source={require('../../assets/ImageFundo1.png')}
@@ -98,7 +112,17 @@ export default function Login(){
                         style={estilo.Input}
                         value={ValorSenha}
                         onChangeText={(senha) => setValorSenha(senha)}
+                        secureTextEntry={MostrarSenha}
                     />
+
+                    <TouchableOpacity onPress={() => setMostrarSenha(!MostrarSenha)}>
+                        {
+                            MostrarSenha ?
+                            <Text>Mostrar senha</Text>
+                            :
+                            <Text>Ocultar senha</Text>
+                        }
+                    </TouchableOpacity>
 
                     <TouchableOpacity style={estilo.Botao} onPress={FazerLogin}>
                         <Text style={estilo.TextoBotao}>Log in</Text>
@@ -201,5 +225,10 @@ const estilo = StyleSheet.create({
         borderWidth: 2, borderColor: "#8B0000", borderBottomRightRadius: 10,
         borderBottomLeftRadius: 10, borderTopLeftRadius: 10, justifyContent: 'center',
         alignItems: 'center', marginTop: -50, maxWidth: "90%", minWidth: 200, padding: 15
-    }
+    },
+    ModalContainer:{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 })

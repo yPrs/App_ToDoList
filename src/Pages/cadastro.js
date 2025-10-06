@@ -4,8 +4,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from "@react-navigation/native";
 import * as Animatable from 'react-native-animatable';
 import { auth, db } from "../Firebase/FirebaseConnection";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { addDoc, collection } from "firebase/firestore";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 
 export default function Cadastro(){
     const navigation = useNavigation();
@@ -18,6 +18,7 @@ export default function Cadastro(){
     const [ValorSenha, setValorSenha] = useState('')
     const [MostrarMensagemConfirmacao, setMostrarMensagemConfirmacao] = useState('')
     const [MostrarMensagemErro, setMostrarMensagemErro] = useState('')
+    const [MostrarSenha, setMostrarSenha] = useState(false)
 
     function CriarConta(){
         setMostrarMensagemConfirmacao('')
@@ -37,7 +38,9 @@ export default function Cadastro(){
         } else{
             createUserWithEmailAndPassword(auth, ValorEmail, ValorSenha)
             .then(async (userCredential) =>{
-                    await addDoc(collection(db, "Usuarios"), {
+                    const UserDados = userCredential.user;
+                    await sendEmailVerification(UserDados);
+                    await setDoc(doc(db, "Usuarios", "1"), {
                         PrimeiroNome: PrimeiroNome,
                         UltimoNome: UltimoNome,
                         Email: ValorEmail,
@@ -49,7 +52,7 @@ export default function Cadastro(){
                     setValorEmail('')
                     setValorSenha('')
 
-                    setMostrarMensagemConfirmacao("Conta criada")
+                    setMostrarMensagemConfirmacao("Conta criada! Verifique sua caixa de entrada (ou spam) para confirmar o e-mail")
                     setTimeout(() => {
                         setMostrarMensagemConfirmacao('')
                     }, 5000)
@@ -59,6 +62,13 @@ export default function Cadastro(){
                 switch(erro.code){
                     case "auth/email-already-in-use":
                         setMostrarMensagemErro('Este e-mail já está sendo usado')
+                        setTimeout(() => {
+                            setMostrarMensagemErro('')
+                        }, 5000)
+                        setValorEmail('')
+                        break;
+                    case "auth/invalid-email":
+                        setMostrarMensagemErro('Formato de email é inválido')
                         setTimeout(() => {
                             setMostrarMensagemErro('')
                         }, 5000)
@@ -119,7 +129,16 @@ export default function Cadastro(){
                         style={estilo.Input}
                         value={ValorSenha}
                         onChangeText={(ValorSenha) => setValorSenha(ValorSenha)}
+                        secureTextEntry={MostrarSenha}
                     />
+
+                    <TouchableOpacity onPress={() => setMostrarSenha(!MostrarSenha)}>
+                        {MostrarSenha ? 
+                            <Text>Mostrar senha</Text>
+                            :
+                            <Text>Ocultar senha</Text>
+                        }
+                    </TouchableOpacity>
 
                     <TouchableOpacity style={estilo.Botao} onPress={CriarConta}>
                         <Text style={estilo.TextoBotao}>Cadastrar</Text>
@@ -216,7 +235,7 @@ const estilo = StyleSheet.create({
         fontWeight: 'bold'
     },
     MensagemConfirmacao:{
-        height: 60, maxWidth: "90%", minWidth: 200, backgroundColor: "#90EE90", 
+        height: 60, maxWidth: "100%", minWidth: 200, backgroundColor: "#90EE90", 
         borderWidth: 2, borderColor: "#008000", borderBottomRightRadius: 10,
         borderBottomLeftRadius: 10, borderTopLeftRadius: 10, justifyContent: 'center',
         alignItems: 'center', marginTop: -60,

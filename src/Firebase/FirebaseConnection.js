@@ -5,16 +5,18 @@ import { initializeApp } from "firebase/app";
 
 import { getFirestore } from "firebase/firestore";
 
-import { initializeAuth, getReactNativePersistence, getAuth } from "firebase/auth";
+import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCQt_JMFa1J9AeBhbVLc5w4outA_mLwp_A",
-  authDomain: "apptodolist-ebf24.firebaseapp.com",
-  projectId: "apptodolist-ebf24",
-  storageBucket: "apptodolist-ebf24.firebasestorage.app",
-  messagingSenderId: "50862330757",
-  appId: "1:50862330757:web:6b6f28b46746be8535aaec"
+  apiKey: "AIzaSyD9ZBDGmvYvYC8jgVT6F0d-TQVFRADSmm8",
+  authDomain: "todolistapp-3a804.firebaseapp.com",
+  projectId: "todolistapp-3a804",
+  storageBucket: "todolistapp-3a804.firebasestorage.app",
+  messagingSenderId: "780767738441",
+  appId: "1:780767738441:web:834f1e2e1a13893b411d98"
 };
 
 // Initialize Firebase
@@ -22,9 +24,8 @@ const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
 
-// Inicializar Auth para React Native
 const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence()
-});
+  persistence: getReactNativePersistence(AsyncStorage)
+})
 
-export { auth, db };
+export { db, auth };
